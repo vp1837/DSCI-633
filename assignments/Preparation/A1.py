@@ -22,9 +22,6 @@ if __name__ == "__main__":
     clf = DecisionTreeClassifier()
     clf.fit(X, Y)
 
-    # clf = GaussianNB()
-    # clf.fit(X,Y)
-
     # Load testing data
     data_test = pd.read_csv("../data/Iris_test.csv")
     X_test = data_test[independent]

@@ -1,46 +1,65 @@
 import numpy as np
 from copy import deepcopy
+from collections import Counter
 
 class my_normalizer:
-    def __init__(self, norm="Min-Max", axis = 1):
-        #     norm = {"L1", "L2", "Min-Max", "Standard_Score"}
-        #     axis = 0: normalize rows
-        #     axis = 1: normalize columns
+    def __init__(self, norm="Min-Max", axis=1):
         self.norm = norm
         self.axis = axis
 
     def fit(self, X):
-        #     X: input matrix
-        #     Calculate offsets and scalers which are used in transform()
-        X_array  = np.asarray(X)
-        # Write your own code below
+        self.min_vals = np.min(X, axis=self.axis)
+        self.max_vals = np.max(X, axis=self.axis)
 
     def transform(self, X):
-        # Transform X into X_norm
         X_norm = deepcopy(np.asarray(X))
-        # Write your own code below
+        if self.norm == "Min-Max":
+            for i in range(X_norm.shape[self.axis]):
+                if self.axis == 0:
+                    X_norm[:, i] = (X_norm[:, i] - self.min_vals[i]) / (self.max_vals[i] - self.min_vals[i])
+                else:
+                    X_norm[i, :] = (X_norm[i, :] - self.min_vals[i]) / (self.max_vals[i] - self.min_vals[i])
+        elif self.norm == "Standard_Score":
+            mean = np.mean(X, axis=self.axis)
+            std_dev = np.std(X, axis=self.axis)
+            for i in range(X_norm.shape[self.axis]):
+                if self.axis == 0:
+                    X_norm[:, i] = (X_norm[:, i] - mean[i]) / std_dev[i]
+                else:
+                    X_norm[i, :] = (X_norm[i, :] - mean[i]) / std_dev[i]
+        elif self.norm == "L1":
+            norms = np.linalg.norm(X, ord=1, axis=self.axis)
+            for i in range(X_norm.shape[self.axis]):
+                if self.axis == 0:
+                    X_norm[:, i] = X_norm[:, i] / norms[i]
+                else:
+                    X_norm[i, :] = X_norm[i, :] / norms[i]
+        elif self.norm == "L2":
+            norms = np.linalg.norm(X, ord=2, axis=self.axis)
+            for i in range(X_norm.shape[self.axis]):
+                if self.axis == 0:
+                    X_norm[:, i] = X_norm[:, i] / norms[i]
+                else:
+                    X_norm[i, :] = X_norm[i, :] / norms[i]
         return X_norm
 
     def fit_transform(self, X):
         self.fit(X)
         return self.transform(X)
 
-def stratified_sampling(y, ratio, replace = True):
-    #  Inputs:
-    #     y: class labels
-    #     0 < ratio < 1: len(sample) = len(y) * ratio
-    #     replace = True: sample with replacement
-    #     replace = False: sample without replacement
-    #  Output:
-    #     sample: indices of stratified sampled points
-    #             (ratio is the same across each class,
-    #             samples for each class = int(np.ceil(ratio * # data in each class)) )
-
-    if ratio<=0 or ratio>=1:
+def stratified_sampling(y, ratio, replace=True):
+    if ratio <= 0 or ratio >= 1:
         raise Exception("ratio must be 0 < ratio < 1.")
     y_array = np.asarray(y)
+    unique_classes = np.unique(y_array)
+    class_counts = Counter(y_array)
     sample = []
-    # Write your own code below
-
-
-    return sample.astype(int)
+    for cls in unique_classes:
+        cls_indices = np.where(y_array == cls)[0]
+        num_samples_cls = int(np.ceil(ratio * class_counts[cls]))
+        if replace:
+            sampled_indices = np.random.choice(cls_indices, size=num_samples_cls, replace=True)
+        else:
+            sampled_indices = np.random.choice(cls_indices, size=num_samples_cls, replace=False)
+        sample.extend(sampled_indices)
+    return np.array(sample).astype(int)

@@ -14,23 +14,48 @@ class my_NB:
     def fit(self, X, y):
         # X: pd.DataFrame, independent variables, str
         # y: list, np.array or pd.Series, dependent variables, int or str
+        # list of classes for this model
         self.classes_ = list(set(list(y)))
-        # Calculate P(yj) and P(xi|yj)        
-        # make sure to use self.alpha in the __init__() function as the smoothing factor when calculating P(xi|yj)
-        # write your code below
+        # for calculation of P(y)
+        self.P_y = Counter(y)
+        
+        # Initialize self.P
+        self.P = {}
+        
+        # Count occurrences of features for each class
+        feature_counts = {label: {feature: Counter(X[feature][y == label]) for feature in X} for label in self.classes_}
+        
+        # Calculate probabilities P(xi|yj)
+        for label in self.classes_:
+            self.P[label] = {}
+            for feature in X:
+                self.P[label][feature] = {}
+                for value in feature_counts[label][feature]:
+                    self.P[label][feature][value] = (feature_counts[label][feature][value] + self.alpha) / \
+                                                     (self.P_y[label] + len(set(X[feature])) * self.alpha)
         return
-
+    
     def predict(self, X):
         # X: pd.DataFrame, independent variables, str
         # return predictions: list
-        # write your code below
+        # Hint: predicted class is the class with highest prediction probability (from self.predict_proba)
+        probs = self.predict_proba(X)
+        predictions = [self.classes_[np.argmax(prob)] for prob in probs.to_numpy()]
         return predictions
-
+    
     def predict_proba(self, X):
         # X: pd.DataFrame, independent variables, str
         # prob is a dict of prediction probabilities belonging to each categories
-        # return probs = pd.DataFrame(list of prob, columns = self.classes_)                
+        # return probs = pd.DataFrame(list of prob, columns = self.classes_)
         # P(yj|x) = P(x|yj)P(yj)
         # P(x|yj) = P(x1|yj)P(x2|yj)...P(xk|yj) = self.P[yj][X1][x1]*self.P[yj][X2][x2]*...*self.P[yj][Xk][xk]
-        # write your code below
+        probs = {}
+        for label in self.classes_:
+            p = self.P_y[label]
+            for key in X:
+                p *= X[key].apply(lambda value: self.P[label][key][value] if value in self.P[label][key] else 1)
+            probs[label] = p
+        probs = pd.DataFrame(probs, columns=self.classes_)
+        sums = probs.sum(axis=1)
+        probs = probs.apply(lambda v: v / sums)
         return probs

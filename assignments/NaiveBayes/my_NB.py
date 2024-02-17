@@ -18,31 +18,33 @@ class my_NB:
         self.classes_ = list(set(list(y)))
         # for calculation of P(y)
         self.P_y = Counter(y)
-        
-        # Initialize self.P
-        self.P = {}
-        
-        # Count occurrences of features for each class
-        feature_counts = {label: {feature: Counter(X[feature][y == label]) for feature in X} for label in self.classes_}
-        
-        # Calculate probabilities P(xi|yj)
+        # self.P[yj][Xi][xi] = P(xi|yj) where Xi is the feature name and xi is the feature value, yj is a specific class label
+        # make sure to use self.alpha in the __init__() function as the smoothing factor when calculating P(xi|yj)
+        self.P = {label: {feature: {} for feature in X.columns} for label in self.classes_}
+
         for label in self.classes_:
-            self.P[label] = {}
-            for feature in X:
-                self.P[label][feature] = {}
-                for value in feature_counts[label][feature]:
-                    self.P[label][feature][value] = (feature_counts[label][feature][value] + self.alpha) / \
-                                                     (self.P_y[label] + len(set(X[feature])) * self.alpha)
+            label_indices = (y == label)
+            total_count = np.sum(label_indices)
+
+            for feature in X.columns:
+                feature_counts = X.loc[label_indices, feature].value_counts()
+                feature_categories = set(X[feature])
+                for category in feature_categories:
+                    if category in feature_counts:
+                        self.P[label][feature][category] = (feature_counts[category] + self.alpha) / (total_count + len(feature_categories) * self.alpha)
+                    else:
+                        self.P[label][feature][category] = self.alpha / (total_count + len(feature_categories) * self.alpha)
         return
     
+
     def predict(self, X):
         # X: pd.DataFrame, independent variables, str
         # return predictions: list
-        # Hint: predicted class is the class with highest prediction probability (from self.predict_proba)
+        # Hint: predicted class is the class with the highest prediction probability (from self.predict_proba)
         probs = self.predict_proba(X)
         predictions = [self.classes_[np.argmax(prob)] for prob in probs.to_numpy()]
         return predictions
-    
+
     def predict_proba(self, X):
         # X: pd.DataFrame, independent variables, str
         # prob is a dict of prediction probabilities belonging to each categories

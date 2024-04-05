@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from geneticalgorithm import geneticalgorithm as ga
 
-# Assuming my_evaluation.py is correctly defined and in the same directory,
+
 # import my_evaluation correctly.
 from my_evaluation import my_evaluation
 
